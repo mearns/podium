@@ -11,7 +11,7 @@ export default class SlideShow extends Component {
   constructor (props) {
     super(props)
     this.state = {
-      currentLocation: this.props.startingLocation,
+      currentLocation: String(this.props.startingLocation).split('-', 2).map(c => parseInt(c)),
       theme: defaultTheme
     }
     this._updateWindowLocation()
@@ -20,11 +20,9 @@ export default class SlideShow extends Component {
   }
 
   _handleHashChange () {
-    this.setState(state => {
-      const targetLocation = parseInt(window.location.hash.substr(1))
-      if (isNaN(targetLocation)) {
-        this._updateWindowLocation()
-      } else if (state.currentLocation !== targetLocation) {
+    this.setState(({ currentLocation }) => {
+      const targetLocation = window.location.hash.substr(1).split('-', 2).map(c => parseInt(c))
+      if (currentLocation[0] !== targetLocation[0] || currentLocation[1] !== targetLocation[1]) {
         return { currentLocation: targetLocation }
       }
       return {}
@@ -32,27 +30,35 @@ export default class SlideShow extends Component {
   }
 
   _navigateBack () {
-    this.setState(state => {
-      const nextLocation = state.currentLocation - 1
-      if (nextLocation >= 0) {
-        return { currentLocation: nextLocation }
+    this.setState((state, props) => {
+      const [slide, phase] = state.currentLocation
+      if (phase === 0) {
+        if (slide > 0) {
+          const phaseCount = props.slides[slide - 1].phases
+          return { currentLocation: [ slide - 1, phaseCount == null ? null : phaseCount - 1 ] }
+        }
+        return {}
+      } else {
+        return { currentLocation: [ slide, phase - 1 ] }
       }
-      return {}
     })
   }
 
   _navigateForward () {
     this.setState((state, props) => {
-      const nextLocation = state.currentLocation + 1
-      if (nextLocation < props.slides.length) {
-        return { currentLocation: nextLocation }
+      const [slide, phase] = state.currentLocation
+      const phaseCount = props.slides[slide].phases
+      if (phaseCount !== null && phase + 1 < phaseCount) {
+        return { currentLocation: [ slide, phase + 1 ] }
+      } else if (slide + 1 < props.slides.length) {
+        return { currentLocation: [ slide + 1, 0 ] }
       }
       return {}
     })
   }
 
   _updateWindowLocation () {
-    window.location.hash = this.state.currentLocation
+    window.location.hash = this.state.currentLocation.join('-')
   }
 
   componentDidUpdate () {
@@ -87,11 +93,11 @@ export default class SlideShow extends Component {
   }
 
   getCurrentSlide () {
-    return this.props.slides[this.state.currentLocation]
+    return this.props.slides[this.state.currentLocation[0]]
   }
 
   render () {
     const currentSlide = this.getCurrentSlide()
-    return this.state.theme.renderSlide(currentSlide.type, currentSlide.content)
+    return this.state.theme.renderSlide(currentSlide.type, { ...currentSlide.content, location: this.state.currentLocation[1] })
   }
 }
