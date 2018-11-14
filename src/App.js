@@ -6,7 +6,7 @@ class App extends Component {
   render () {
     return (
       <div className='App'>
-        <SlideShow slides={this.props.slides} />
+        <SlideShow slides={this.props.slides} startingLocation={1} />
       </div>
     )
   }

@@ -1,9 +1,12 @@
 import defaultSlide from './__default__'
+import titledBullets from './TitledBullets'
 
 class DefaultTheme {
   constructor () {
     this._defaultSlide = defaultSlide
-    this._slides = {}
+    this._slides = {
+      'titled-bullets': titledBullets
+    }
   }
 
   renderSlide (slideType, slideContent) {

@@ -8,6 +8,16 @@ const slides = [
         'Here is another paragraph of content.'
       ]
     }
+  },
+  {
+    type: 'titled-bullets',
+    content: {
+      title: 'Reasons to Use Podium',
+      bullets: [
+        'It\'s cool',
+        'It\'s not Micro$oft Powerpoint'
+      ]
+    }
   }
 ]
 
