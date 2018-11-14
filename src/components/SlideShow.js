@@ -16,6 +16,19 @@ export default class SlideShow extends Component {
     }
     this._updateWindowLocation()
     this._handleKeyDown = this._handleKeyDown.bind(this)
+    this._handleHashChange = this._handleHashChange.bind(this)
+  }
+
+  _handleHashChange () {
+    this.setState(state => {
+      const targetLocation = parseInt(window.location.hash.substr(1))
+      if (isNaN(targetLocation)) {
+        this._updateWindowLocation()
+      } else if (state.currentLocation !== targetLocation) {
+        return { currentLocation: targetLocation }
+      }
+      return {}
+    })
   }
 
   _navigateBack () {
@@ -65,9 +78,11 @@ export default class SlideShow extends Component {
 
   componentWillMount () {
     document.addEventListener('keydown', this._handleKeyDown)
+    window.addEventListener('hashchange', this._handleHashChange)
   }
 
   componentWillUnmount () {
+    window.removeEventListener('hashchange', this._handleHashChange)
     document.removeEventListener('keydown', this._handleKeyDown)
   }
 
