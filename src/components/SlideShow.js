@@ -14,6 +14,7 @@ export default class SlideShow extends Component {
       currentLocation: this.props.startingLocation,
       theme: defaultTheme
     }
+    this._updateWindowLocation()
     this._handleKeyDown = this._handleKeyDown.bind(this)
   }
 
@@ -35,6 +36,14 @@ export default class SlideShow extends Component {
       }
       return {}
     })
+  }
+
+  _updateWindowLocation () {
+    window.location.hash = this.state.currentLocation
+  }
+
+  componentDidUpdate () {
+    this._updateWindowLocation()
   }
 
   _handleKeyDown (event) {
