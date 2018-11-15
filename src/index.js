@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
-import slides from './slides'
+import slides from './my-presentation'
 
 ReactDOM.render(<App slides={slides} />, document.getElementById('root'));
 
