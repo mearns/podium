@@ -11,10 +11,10 @@ export default class SlideShow extends Component {
   constructor (props) {
     super(props)
     this.state = {
-      currentLocation: String(this.props.startingLocation).split('-', 2).map(c => parseInt(c)),
+      currentLocation: this._loadLocationFromHash([0, 0]),
       theme: defaultTheme
     }
-    this._updateWindowLocation()
+    this._update()
     this._handleKeyDown = this._handleKeyDown.bind(this)
     this._handleHashChange = this._handleHashChange.bind(this)
   }
@@ -22,7 +22,7 @@ export default class SlideShow extends Component {
   _findSlideNumber (slideId, props = this.props) {
     const slideNumber = parseInt(slideId)
     if (isNaN(slideNumber)) {
-      return props.slides.findIndex(slide => slide.ids.includes(slideId))
+      return props.slideNumbersById[slideId]
     } else {
       return slideNumber
     }
@@ -33,23 +33,31 @@ export default class SlideShow extends Component {
     if (isNaN(phaseNumber)) {
       return 0
     } else if (phaseNumber >= slide.phaseCount) {
-      return slide.phaseCount - 1
+      return (slide.phaseCount && slide.phaseCount - 1) || slide.phaseCount
     }
     return phaseNumber
   }
 
+  _parseLocation (locationString, currentLocation, props = this.props) {
+    const [slideId, phaseId = 0] = locationString.split('-', 2)
+    const slideNumber = this._findSlideNumber(slideId, props)
+    const slide = props.slides[slideNumber]
+    if (slide == null) {
+      return currentLocation
+    }
+    const phaseNumber = this._findPhaseNumber(phaseId, slide)
+    return [slideNumber, phaseNumber]
+  }
+
+  _loadLocationFromHash (currentLocation, props = this.props) {
+    return this._parseLocation(window.location.hash.substr(1), currentLocation, props)
+  }
+
   _handleHashChange () {
     this.setState(({ currentLocation }, props) => {
-      const [slideId, phaseId = 0] = window.location.hash.substr(1).split('-', 2)
-      const slideNumber = this._findSlideNumber(slideId, props)
-      const slide = props.slides[slideNumber]
-      if (slide == null) {
-        this._updateWindowLocation()
-        return {}
-      }
-      const phaseNumber = this._findPhaseNumber(phaseId, slide)
-      if (currentLocation[0] !== slideNumber || currentLocation[1] !== phaseNumber) {
-        return { currentLocation: [slideNumber, phaseNumber] }
+      const [slide, phase] = this._loadLocationFromHash(currentLocation, props)
+      if (currentLocation[0] !== slide || currentLocation[1] !== phase) {
+        return { currentLocation: [slide, phase] }
       }
       return {}
     })
@@ -61,7 +69,7 @@ export default class SlideShow extends Component {
       if (phase === 0) {
         if (slide > 0) {
           const phaseCount = props.slides[slide - 1].phaseCount
-          return { currentLocation: [ slide - 1, phaseCount == null ? null : phaseCount - 1 ] }
+          return { currentLocation: [ slide - 1, phaseCount === 0 ? 0 : phaseCount - 1 ] }
         }
         return {}
       } else {
@@ -83,14 +91,17 @@ export default class SlideShow extends Component {
     })
   }
 
-  _updateWindowLocation () {
-    window.location.hash = `${this._currentSlideId}-${this.state.currentLocation[1]}`
+  _update () {
+    const slide = this.getCurrentSlide()
+    this._currentSlideId = slide.ids[0] || this.state.currentLocation[0]
+    const newHash = `${this._currentSlideId}-${this.state.currentLocation[1]}`
+    if (window.location.hash !== newHash) {
+      window.location.hash = newHash
+    }
   }
 
   componentDidUpdate () {
-    const slide = this.getCurrentSlide()
-    this._currentSlideId = slide.ids[0] || this.state.currentLocation[0]
-    this._updateWindowLocation()
+    this._update()
   }
 
   _handleKeyDown (event) {
@@ -126,6 +137,6 @@ export default class SlideShow extends Component {
 
   render () {
     const currentSlide = this.getCurrentSlide()
-    return this.state.theme.renderSlide(currentSlide.type, { ...currentSlide.content, location: this.state.currentLocation[1] })
+    return this.state.theme.renderSlide(currentSlide.type, { ...currentSlide.content, phase: this.state.currentLocation[1] })
   }
 }
