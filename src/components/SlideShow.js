@@ -137,6 +137,12 @@ export default class SlideShow extends Component {
 
   render () {
     const currentSlide = this.getCurrentSlide()
-    return this.state.theme.renderSlide(currentSlide.type, { ...currentSlide.content, phase: this.state.currentLocation[1] })
+    return this.state.theme.renderSlide(
+      currentSlide.type,
+      {
+        ...currentSlide,
+        phase: this.state.currentLocation[1]
+      }
+    )
   }
 }

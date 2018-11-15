@@ -1,11 +1,13 @@
 import defaultSlide from './__default__'
 import bulletList from './BulletList'
+import text from './Text'
 
 class DefaultTheme {
   constructor () {
     this._defaultSlide = defaultSlide
     this._slides = {
-      'bullet-list': bulletList
+      'bullet-list': bulletList,
+      'text': text
     }
   }
 

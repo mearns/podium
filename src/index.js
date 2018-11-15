@@ -7,7 +7,6 @@ import slides from './my-presentation'
 import loadSlides from './slides'
 
 const props = loadSlides(slides)
-console.log(props)
 ReactDOM.render(<SlideShow {...props} />, document.getElementById('root'))
 
 // If you want your app to work offline and load faster, you can change

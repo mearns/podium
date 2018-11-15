@@ -4,23 +4,23 @@ class Slide {
     this.ids = ids
     this.content = content
     this.phaseCount = 0
-    const itemized = tags.includes('itemize')
+    const itemize = this.itemize = tags.includes('itemize')
     const hasBullets = Array.isArray(content.bullets)
     const hasList = Array.isArray(content.list)
     const hasParagraphs = Array.isArray(content.paragraphs)
     if (hasBullets && !hasList && !hasParagraphs) {
       this.type = 'bullet-list'
-      if (itemized) {
+      if (itemize) {
         this.phaseCount = content.bullets.length
       }
     } else if (hasList && !hasBullets && !hasParagraphs) {
       this.type = 'numbered-list'
-      if (itemized) {
+      if (itemize) {
         this.phaseCount = content.list.length
       }
     } else if (hasParagraphs && !hasBullets && !hasList) {
       this.type = 'text'
-      if (itemized) {
+      if (itemize) {
         this.phaseCount = content.paragraphs.length
       }
     }

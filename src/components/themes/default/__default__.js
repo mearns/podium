@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function render ({ title, paragraphs = [] }) {
+export default function render ({ content: { title, paragraphs = [] } }) {
   return (
     <section>
       <h1>{title}</h1>

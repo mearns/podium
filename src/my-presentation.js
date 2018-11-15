@@ -1,6 +1,7 @@
 const slides = [
   {
     ids: ['home'],
+    tags: ['itemize'],
     content: {
       title: 'Hello, Podium',
       paragraphs: [
@@ -11,7 +12,6 @@ const slides = [
   },
   {
     ids: ['bullets'],
-    tags: ['itemize'],
     content: {
       title: 'Reasons to Use Podium',
       bullets: [
