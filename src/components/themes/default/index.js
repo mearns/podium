@@ -1,5 +1,6 @@
 import defaultSlide from './__default__'
 import bulletList from './BulletList'
+import numberedList from './NumberedList'
 import text from './Text'
 
 class DefaultTheme {
@@ -7,6 +8,7 @@ class DefaultTheme {
     this._defaultSlide = defaultSlide
     this._slides = {
       'bullet-list': bulletList,
+      'numbered-list': numberedList,
       'text': text
     }
   }

@@ -19,6 +19,16 @@ const slides = [
         'It\'s not Micro$oft Powerpoint'
       ]
     }
+  },
+  {
+    tags: ['itemize'],
+    content: {
+      list: [
+        'Here\' a numbered list',
+        'More items',
+        'Three'
+      ]
+    }
   }
 ]
 
