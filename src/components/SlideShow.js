@@ -19,11 +19,37 @@ export default class SlideShow extends Component {
     this._handleHashChange = this._handleHashChange.bind(this)
   }
 
+  _findSlideNumber (slideId, props = this.props) {
+    const slideNumber = parseInt(slideId)
+    if (isNaN(slideNumber)) {
+      return props.slides.findIndex(slide => slide.ids.includes(slideId))
+    } else {
+      return slideNumber
+    }
+  }
+
+  _findPhaseNumber (phaseId, slide = this.getCurrentSlide()) {
+    const phaseNumber = parseInt(phaseId)
+    if (isNaN(phaseNumber)) {
+      return 0
+    } else if (phaseNumber >= slide.phaseCount) {
+      return slide.phaseCount - 1
+    }
+    return phaseNumber
+  }
+
   _handleHashChange () {
-    this.setState(({ currentLocation }) => {
-      const targetLocation = window.location.hash.substr(1).split('-', 2).map(c => parseInt(c))
-      if (currentLocation[0] !== targetLocation[0] || currentLocation[1] !== targetLocation[1]) {
-        return { currentLocation: targetLocation }
+    this.setState(({ currentLocation }, props) => {
+      const [slideId, phaseId = 0] = window.location.hash.substr(1).split('-', 2)
+      const slideNumber = this._findSlideNumber(slideId, props)
+      const slide = props.slides[slideNumber]
+      if (slide == null) {
+        this._updateWindowLocation()
+        return {}
+      }
+      const phaseNumber = this._findPhaseNumber(phaseId, slide)
+      if (currentLocation[0] !== slideNumber || currentLocation[1] !== phaseNumber) {
+        return { currentLocation: [slideNumber, phaseNumber] }
       }
       return {}
     })
@@ -34,7 +60,7 @@ export default class SlideShow extends Component {
       const [slide, phase] = state.currentLocation
       if (phase === 0) {
         if (slide > 0) {
-          const phaseCount = props.slides[slide - 1].phases
+          const phaseCount = props.slides[slide - 1].phaseCount
           return { currentLocation: [ slide - 1, phaseCount == null ? null : phaseCount - 1 ] }
         }
         return {}
@@ -47,7 +73,7 @@ export default class SlideShow extends Component {
   _navigateForward () {
     this.setState((state, props) => {
       const [slide, phase] = state.currentLocation
-      const phaseCount = props.slides[slide].phases
+      const phaseCount = props.slides[slide].phaseCount
       if (phaseCount !== null && phase + 1 < phaseCount) {
         return { currentLocation: [ slide, phase + 1 ] }
       } else if (slide + 1 < props.slides.length) {
@@ -58,10 +84,12 @@ export default class SlideShow extends Component {
   }
 
   _updateWindowLocation () {
-    window.location.hash = this.state.currentLocation.join('-')
+    window.location.hash = `${this._currentSlideId}-${this.state.currentLocation[1]}`
   }
 
   componentDidUpdate () {
+    const slide = this.getCurrentSlide()
+    this._currentSlideId = slide.ids[0] || this.state.currentLocation[0]
     this._updateWindowLocation()
   }
 

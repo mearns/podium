@@ -1,7 +1,8 @@
 const slides = [
   {
     type: 'titled-text',
-    phases: 1,
+    ids: ['home'],
+    phaseCount: 1,
     content: {
       title: 'Hello, Podium',
       paragraphs: [
@@ -12,7 +13,8 @@ const slides = [
   },
   {
     type: 'titled-bullets',
-    phases: 2,
+    ids: ['bullets'],
+    phaseCount: 2,
     content: {
       title: 'Reasons to Use Podium',
       bullets: [
