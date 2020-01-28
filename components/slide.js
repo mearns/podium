@@ -119,7 +119,8 @@ function getStyleForDescriptor(descriptor) {
         const styles = {
             display: "inline-block",
             padding: 0,
-            margin: 0
+            margin: 0,
+            listStylePosition: "inside"
         };
         if (descriptor.x || descriptor.y) {
             styles.position = "absolute";
