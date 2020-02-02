@@ -40,6 +40,7 @@ const SlideDeck = dynamic(
                 });
             }
             const [sized, setSized] = React.useState(false);
+            const [sizing, setSizing] = React.useState(false);
             const handleKeyPress = React.useCallback(
                 event => {
                     handleKeyPressForDeck(
@@ -53,9 +54,13 @@ const SlideDeck = dynamic(
                 [router, currentSlide, slides.length, setCurrentSlide]
             );
             React.useLayoutEffect(() => {
-                if (!sized) {
-                    fitDescriptors(descriptors);
-                    setSized(true);
+                if (!sized && !sizing) {
+                    setSizing(true);
+                    (async () => {
+                        await fitDescriptors(descriptors);
+                        setSized(true);
+                        setSizing(false);
+                    })();
                 }
             }, [descriptors]);
 
@@ -70,17 +75,27 @@ const SlideDeck = dynamic(
                 };
             }, [handleKeyPress]);
             return (
-                <div
-                    data-podium="slide-deck"
-                    style={{
-                        display: "inline-block",
-                        width: `${scale}px`,
-                        height: `${scale * aspect}px`,
-                        visibility: sized ? "visible" : "hidden"
-                    }}
-                >
-                    {sized ? els[currentSlide] : els}
-                </div>
+                <>
+                    {sizing && (
+                        <p>
+                            Fitting to screen...
+                            <span className="text-size-small">s</span>
+                            <span className="text-size-medium">m</span>
+                            <span className="text-size-large">L</span>
+                        </p>
+                    )}
+                    <div
+                        data-podium="slide-deck"
+                        style={{
+                            display: "inline-block",
+                            width: `${scale}px`,
+                            height: `${scale * aspect}px`,
+                            visibility: sized ? "visible" : "hidden"
+                        }}
+                    >
+                        {sized ? els[currentSlide] : els}
+                    </div>
+                </>
             );
         },
     { ssr: false }
@@ -132,7 +147,8 @@ function handleKeyPressForDeck(
 
 const TEXT_SIZE_FACTOR = 2.0;
 
-function fitDescriptors(descriptors) {
+async function fitDescriptors(descriptors) {
+    console.time("fitDescriptors");
     const style = document.createElement("style");
     style.appendChild(document.createTextNode(""));
     document.head.appendChild(style);
@@ -171,8 +187,19 @@ function fitDescriptors(descriptors) {
             upper = current;
             current = next;
         }
+        await beNice();
     }
     setSizes(current);
+    console.timeEnd("fitDescriptors");
+}
+
+/**
+ * Make sure we're leaving room for other tasks to run.
+ */
+function beNice() {
+    return new Promise(resolve => {
+        resolve();
+    });
 }
 
 function allBoxesFit(descriptor) {
