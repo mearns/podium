@@ -12,12 +12,34 @@ export default dynamic(
             );
             const [currentSlide, setCurrentSlide] = React.useState(0);
             const [sized, setSized] = React.useState(false);
+            const handleKeyPress = React.useCallback(
+                event => {
+                    handleKeyPressForDeck(
+                        event,
+                        currentSlide,
+                        slides.length,
+                        setCurrentSlide
+                    );
+                },
+                [currentSlide, slides.length, setCurrentSlide]
+            );
             React.useLayoutEffect(() => {
                 if (!sized) {
                     fitDescriptors(descriptors);
                     setSized(true);
                 }
             }, [descriptors]);
+
+            React.useEffect(() => {
+                document.addEventListener("keydown", handleKeyPress, false);
+                return () => {
+                    document.removeEventListener(
+                        "keydown",
+                        handleKeyPress,
+                        false
+                    );
+                };
+            }, [handleKeyPress]);
             return (
                 <div
                     data-podium="slide-deck"
@@ -34,6 +56,28 @@ export default dynamic(
         },
     { ssr: false }
 );
+
+function handleKeyPressForDeck(
+    event,
+    currentSlide,
+    slideCount,
+    setCurrentSlide
+) {
+    console.log("Current Slide", currentSlide);
+    switch (event.key) {
+        case "ArrowRight":
+            if (currentSlide + 1 < slideCount) {
+                setCurrentSlide(currentSlide + 1);
+            }
+            break;
+
+        case "ArrowLeft":
+            if (currentSlide) {
+                setCurrentSlide(currentSlide - 1);
+            }
+            break;
+    }
+}
 
 const TEXT_SIZE_FACTOR = 2.0;
 
