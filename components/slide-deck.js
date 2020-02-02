@@ -1,27 +1,43 @@
 import React from "react";
+import dynamic from "next/dynamic";
 
-export default function Slide({ children: layout, scale, aspect }) {
-    const descriptor = layout.renderToDescriptor(scale);
-    const el = renderDescriptor(descriptor);
-    React.useEffect(() => fitDescriptor(descriptor), [descriptor]);
-    return (
-        <>
-            <div
-                style={{
-                    display: "inline-block",
-                    width: `${scale}px`,
-                    height: `${scale * aspect}px`
-                }}
-            >
-                {el}
-            </div>
-        </>
-    );
-}
+export default dynamic(
+    async () =>
+        function SlideDeck({ children: slides, scale, aspect }) {
+            const descriptors = slides.map(slide =>
+                slide.renderToDescriptor(scale)
+            );
+            const els = descriptors.map((descriptor, idx) =>
+                renderDescriptor(descriptor, idx)
+            );
+            const [currentSlide, setCurrentSlide] = React.useState(0);
+            const [sized, setSized] = React.useState(false);
+            React.useLayoutEffect(() => {
+                if (!sized) {
+                    fitDescriptors(descriptors);
+                    setSized(true);
+                }
+            }, [descriptors]);
+            return (
+                <div
+                    data-podium="slide-deck"
+                    style={{
+                        display: "inline-block",
+                        width: `${scale}px`,
+                        height: `${scale * aspect}px`,
+                        visibility: sized ? "visible" : "hidden"
+                    }}
+                >
+                    {sized ? els[currentSlide] : els}
+                </div>
+            );
+        },
+    { ssr: false }
+);
 
 const TEXT_SIZE_FACTOR = 2.0;
 
-function fitDescriptor(descriptor) {
+function fitDescriptors(descriptors) {
     const style = document.createElement("style");
     style.appendChild(document.createTextNode(""));
     document.head.appendChild(style);
@@ -45,7 +61,7 @@ function fitDescriptor(descriptor) {
     let current = 30;
     while (true) {
         setSizes(current);
-        if (allBoxesFit(descriptor)) {
+        if (descriptors.every(d => allBoxesFit(d))) {
             const next = Math.floor((current + upper) / 2);
             if (current === next) {
                 break;
@@ -83,7 +99,7 @@ function allBoxesFit(descriptor) {
     return true;
 }
 
-function renderDescriptor(descriptor) {
+function renderDescriptor(descriptor, key) {
     if (typeof descriptor === "string") {
         return descriptor;
     }
@@ -94,6 +110,8 @@ function renderDescriptor(descriptor) {
         descriptor.tag,
         {
             ...descriptor.attributes,
+            "data-podium-slide": key,
+            key,
             style: getStyleForDescriptor(descriptor),
             "data-podium-descriptor": JSON.stringify(
                 without(descriptor, "children", "tag", "attributes")
