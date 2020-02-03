@@ -89,10 +89,9 @@ const SlideDeck = dynamic(
             );
             React.useLayoutEffect(() => {
                 if (
-                    !sizing &&
-                    (!sized ||
-                        scale !== sizedAtScale ||
-                        aspect !== sizedAtAspect)
+                    (!sizing && !sized) ||
+                    scale !== sizedAtScale ||
+                    aspect !== sizedAtAspect
                 ) {
                     setSizing(true);
                     (async () => {
