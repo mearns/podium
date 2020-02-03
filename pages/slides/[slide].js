@@ -24,18 +24,18 @@ export default dynamic(
                 height: 600 * aspect
             });
             const handleResize = React.useCallback(() => {
-                const width = window.innerWidth;
-                const height = window.innerHeight;
+                const width = window.innerWidth * 0.9;
+                const height = window.innerHeight * 0.9;
                 const windowAspect = height / width;
                 if (windowAspect > aspect) {
                     setSize({
-                        width: window.innerWidth,
-                        height: window.innerWidth * aspect
+                        width,
+                        height: width * aspect
                     });
                 } else {
                     setSize({
-                        height: window.innerHeight,
-                        width: window.innerHeight / aspect
+                        height,
+                        width: height / aspect
                     });
                 }
             }, [aspect, setSize]);
@@ -118,8 +118,11 @@ const SlideDeck = dynamic(
                 <div
                     data-podium="slide-deck"
                     style={{
-                        display: "inline-block",
-                        border: "1px solid #999"
+                        display: "block",
+                        border: "1px solid #999",
+                        margin: "auto",
+                        maxWidth: `${scale}px`,
+                        position: "relative"
                     }}
                 >
                     {sizing && (
@@ -131,7 +134,6 @@ const SlideDeck = dynamic(
                         </p>
                     )}
                     <div
-                        data-podium="slide-deck"
                         style={{
                             display: "inline-block",
                             width: `${scale}px`,
