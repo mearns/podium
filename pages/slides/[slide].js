@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 
 import renderTitledList from "../../lib/layouts/default/titled-list";
 
-export default function Index({ scale = 400, aspect = 3 / 4 }) {
+function getSlides(aspect) {
     const slide1 = renderTitledList(aspect, {
         title: "This is my title",
         items: ["One", "two"]
@@ -13,13 +13,43 @@ export default function Index({ scale = 400, aspect = 3 / 4 }) {
         title: "Here is my second slide with a long title",
         items: ["Uno", "Dos", "three", "four is also long"]
     });
-    const slides = [slide1, slide2];
-    return (
-        <SlideDeck scale={scale} aspect={aspect}>
-            {slides}
-        </SlideDeck>
-    );
+    return [slide1, slide2];
 }
+
+export default dynamic(
+    async () =>
+        function Index({ aspect = 3 / 4 }) {
+            const [size, setSize] = React.useState({
+                width: 600,
+                height: 600 * aspect
+            });
+            const handleResize = React.useCallback(() => {
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                const windowAspect = height / width;
+                if (windowAspect > aspect) {
+                    setSize({
+                        width: window.innerWidth,
+                        height: window.innerWidth * aspect
+                    });
+                } else {
+                    setSize({
+                        height: window.innerHeight,
+                        width: window.innerHeight / aspect
+                    });
+                }
+            }, [aspect, setSize]);
+            React.useLayoutEffect(() => {
+                handleResize();
+                window.addEventListener("resize", handleResize);
+            }, [handleResize]);
+            return (
+                <SlideDeck scale={size.width} aspect={aspect}>
+                    {getSlides(aspect)}
+                </SlideDeck>
+            );
+        }
+);
 
 const SlideDeck = dynamic(
     async () =>
@@ -34,6 +64,10 @@ const SlideDeck = dynamic(
             const [currentSlide, setCurrentSlide] = React.useState(
                 getInitialSlide(router, slides.length)
             );
+            const [[sizedAtScale, sizedAtAspect], setSizedAt] = React.useState([
+                scale,
+                aspect
+            ]);
             if (router.asPath !== `/slides/${currentSlide}`) {
                 router.replace(`/slides/[slide]`, `/slides/${currentSlide}`, {
                     shallow: true
@@ -54,12 +88,18 @@ const SlideDeck = dynamic(
                 [router, currentSlide, slides.length, setCurrentSlide]
             );
             React.useLayoutEffect(() => {
-                if (!sized && !sizing) {
+                if (
+                    !sizing &&
+                    (!sized ||
+                        scale !== sizedAtScale ||
+                        aspect !== sizedAtAspect)
+                ) {
                     setSizing(true);
                     (async () => {
                         await fitDescriptors(descriptors);
                         setSized(true);
                         setSizing(false);
+                        setSizedAt([scale, aspect]);
                     })();
                 }
             }, [descriptors]);
@@ -75,7 +115,13 @@ const SlideDeck = dynamic(
                 };
             }, [handleKeyPress]);
             return (
-                <>
+                <div
+                    data-podium="slide-deck"
+                    style={{
+                        display: "inline-block",
+                        border: "1px solid #999"
+                    }}
+                >
                     {sizing && (
                         <p>
                             Fitting to screen...
@@ -95,7 +141,7 @@ const SlideDeck = dynamic(
                     >
                         {sized ? els[currentSlide] : els}
                     </div>
-                </>
+                </div>
             );
         },
     { ssr: false }
