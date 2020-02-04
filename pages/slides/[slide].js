@@ -44,12 +44,6 @@ export default dynamic(
                 handleResize();
                 window.addEventListener("resize", handleResize);
             }, [handleResize]);
-            React.useLayoutEffect(() => {
-                let socket = io();
-                socket.on("hello", data => {
-                    console.log("XXXX", data);
-                });
-            }, []);
             return (
                 <SlideDeck scale={size.width} aspect={aspect}>
                     {getSlides(aspect)}
@@ -63,12 +57,15 @@ export default dynamic(
 
 function SlideDeck({ children: slides, scale, aspect }) {
     const router = useRouter();
-    const descriptors = slides.map(slide => slide.renderToDescriptor(scale));
-    const els = descriptors.map((descriptor, idx) =>
-        renderDescriptor(descriptor, idx)
-    );
     const [currentSlide, setCurrentSlide] = React.useState(
         getInitialSlide(router, slides.length)
+    );
+    const [sized, setSized] = React.useState(false);
+    const [sizing, setSizing] = React.useState(false);
+
+    const descriptors = slides.map(slide => slide.renderToDescriptor(scale));
+    const els = descriptors.map((descriptor, idx) =>
+        renderDescriptor(descriptor, idx, sized && idx === currentSlide)
     );
     const [[sizedAtScale, sizedAtAspect], setSizedAt] = React.useState([
         scale,
@@ -79,8 +76,6 @@ function SlideDeck({ children: slides, scale, aspect }) {
             shallow: true
         });
     }
-    const [sized, setSized] = React.useState(false);
-    const [sizing, setSizing] = React.useState(false);
     const handleKeyPress = React.useCallback(
         event => {
             handleKeyPressForDeck(
@@ -100,6 +95,7 @@ function SlideDeck({ children: slides, scale, aspect }) {
             aspect !== sizedAtAspect
         ) {
             setSizing(true);
+            setSized(false);
             (async () => {
                 await fitDescriptors(descriptors);
                 setSized(true);
@@ -138,11 +134,10 @@ function SlideDeck({ children: slides, scale, aspect }) {
                 style={{
                     display: "inline-block",
                     width: `${scale}px`,
-                    height: `${scale * aspect}px`,
-                    visibility: sized ? "visible" : "hidden"
+                    height: `${scale * aspect}px`
                 }}
             >
-                {sized ? els[currentSlide] : els}
+                {els}
             </div>
         </div>
     );
@@ -268,11 +263,13 @@ function allBoxesFit(descriptor) {
     return true;
 }
 
-function renderDescriptor(descriptor, key) {
+function renderDescriptor(descriptor, key, isCurrent = false) {
     if (typeof descriptor === "string") {
         return descriptor;
     }
-    const childElements = (descriptor.children || []).map(renderDescriptor);
+    const childElements = (descriptor.children || []).map((child, idx) =>
+        renderDescriptor(child, idx, isCurrent)
+    );
 
     const ref = React.useRef();
     const el = React.createElement(
@@ -281,7 +278,10 @@ function renderDescriptor(descriptor, key) {
             ...descriptor.attributes,
             "data-podium-slide": key,
             key,
-            style: getStyleForDescriptor(descriptor),
+            style: {
+                ...getStyleForDescriptor(descriptor),
+                visibility: isCurrent ? "visible" : "hidden"
+            },
             "data-podium-descriptor": JSON.stringify(
                 without(descriptor, "children", "tag", "attributes")
             ),
