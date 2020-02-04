@@ -1,6 +1,7 @@
 import React from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
+import io from "socket.io-client";
 
 import renderTitledList from "../../lib/layouts/default/titled-list";
 
@@ -43,110 +44,109 @@ export default dynamic(
                 handleResize();
                 window.addEventListener("resize", handleResize);
             }, [handleResize]);
+            React.useLayoutEffect(() => {
+                let socket = io();
+                socket.on("hello", data => {
+                    console.log("XXXX", data);
+                });
+            }, []);
             return (
                 <SlideDeck scale={size.width} aspect={aspect}>
                     {getSlides(aspect)}
                 </SlideDeck>
             );
-        }
+        },
+    {
+        ssr: false
+    }
 );
 
-const SlideDeck = dynamic(
-    async () =>
-        function SlideDeck({ children: slides, scale, aspect }) {
-            const router = useRouter();
-            const descriptors = slides.map(slide =>
-                slide.renderToDescriptor(scale)
-            );
-            const els = descriptors.map((descriptor, idx) =>
-                renderDescriptor(descriptor, idx)
-            );
-            const [currentSlide, setCurrentSlide] = React.useState(
-                getInitialSlide(router, slides.length)
-            );
-            const [[sizedAtScale, sizedAtAspect], setSizedAt] = React.useState([
-                scale,
-                aspect
-            ]);
-            if (router.asPath !== `/slides/${currentSlide}`) {
-                router.replace(`/slides/[slide]`, `/slides/${currentSlide}`, {
-                    shallow: true
-                });
-            }
-            const [sized, setSized] = React.useState(false);
-            const [sizing, setSizing] = React.useState(false);
-            const handleKeyPress = React.useCallback(
-                event => {
-                    handleKeyPressForDeck(
-                        router,
-                        event,
-                        currentSlide,
-                        slides.length,
-                        setCurrentSlide
-                    );
-                },
-                [router, currentSlide, slides.length, setCurrentSlide]
-            );
-            React.useLayoutEffect(() => {
-                if (
-                    (!sizing && !sized) ||
-                    scale !== sizedAtScale ||
-                    aspect !== sizedAtAspect
-                ) {
-                    setSizing(true);
-                    (async () => {
-                        await fitDescriptors(descriptors);
-                        setSized(true);
-                        setSizing(false);
-                        setSizedAt([scale, aspect]);
-                    })();
-                }
-            }, [descriptors]);
-
-            React.useEffect(() => {
-                document.addEventListener("keydown", handleKeyPress, false);
-                return () => {
-                    document.removeEventListener(
-                        "keydown",
-                        handleKeyPress,
-                        false
-                    );
-                };
-            }, [handleKeyPress]);
-            return (
-                <div
-                    data-podium="slide-deck"
-                    style={{
-                        display: "block",
-                        border: "1px solid #999",
-                        margin: "auto",
-                        maxWidth: `${scale}px`,
-                        position: "relative"
-                    }}
-                >
-                    {sizing && (
-                        <p>
-                            Fitting to screen...
-                            <span className="text-size-small">s</span>
-                            <span className="text-size-medium">m</span>
-                            <span className="text-size-large">L</span>
-                        </p>
-                    )}
-                    <div
-                        style={{
-                            display: "inline-block",
-                            width: `${scale}px`,
-                            height: `${scale * aspect}px`,
-                            visibility: sized ? "visible" : "hidden"
-                        }}
-                    >
-                        {sized ? els[currentSlide] : els}
-                    </div>
-                </div>
+function SlideDeck({ children: slides, scale, aspect }) {
+    const router = useRouter();
+    const descriptors = slides.map(slide => slide.renderToDescriptor(scale));
+    const els = descriptors.map((descriptor, idx) =>
+        renderDescriptor(descriptor, idx)
+    );
+    const [currentSlide, setCurrentSlide] = React.useState(
+        getInitialSlide(router, slides.length)
+    );
+    const [[sizedAtScale, sizedAtAspect], setSizedAt] = React.useState([
+        scale,
+        aspect
+    ]);
+    if (router.asPath !== `/slides/${currentSlide}`) {
+        router.replace(`/slides/[slide]`, `/slides/${currentSlide}`, {
+            shallow: true
+        });
+    }
+    const [sized, setSized] = React.useState(false);
+    const [sizing, setSizing] = React.useState(false);
+    const handleKeyPress = React.useCallback(
+        event => {
+            handleKeyPressForDeck(
+                router,
+                event,
+                currentSlide,
+                slides.length,
+                setCurrentSlide
             );
         },
-    { ssr: false }
-);
+        [router, currentSlide, slides.length, setCurrentSlide]
+    );
+    React.useLayoutEffect(() => {
+        if (
+            (!sizing && !sized) ||
+            scale !== sizedAtScale ||
+            aspect !== sizedAtAspect
+        ) {
+            setSizing(true);
+            (async () => {
+                await fitDescriptors(descriptors);
+                setSized(true);
+                setSizing(false);
+                setSizedAt([scale, aspect]);
+            })();
+        }
+    }, [descriptors]);
+
+    React.useEffect(() => {
+        document.addEventListener("keydown", handleKeyPress, false);
+        return () => {
+            document.removeEventListener("keydown", handleKeyPress, false);
+        };
+    }, [handleKeyPress]);
+    return (
+        <div
+            data-podium="slide-deck"
+            style={{
+                display: "block",
+                border: "1px solid #999",
+                margin: "auto",
+                maxWidth: `${scale}px`,
+                position: "relative"
+            }}
+        >
+            {sizing && (
+                <p>
+                    Fitting to screen...
+                    <span className="text-size-small">s</span>
+                    <span className="text-size-medium">m</span>
+                    <span className="text-size-large">L</span>
+                </p>
+            )}
+            <div
+                style={{
+                    display: "inline-block",
+                    width: `${scale}px`,
+                    height: `${scale * aspect}px`,
+                    visibility: sized ? "visible" : "hidden"
+                }}
+            >
+                {sized ? els[currentSlide] : els}
+            </div>
+        </div>
+    );
+}
 
 function getInitialSlide(router, slideCount) {
     const givenSlide = router.query.slide;
