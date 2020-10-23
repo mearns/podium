@@ -17,6 +17,42 @@ function getSlides(aspect) {
     return [slide1, slide2];
 }
 
+const socket = {
+    _io: null,
+    _queued: [],
+    on(...args) {
+        if (this._io) {
+            this._io.on(...args);
+        } else {
+            this._queued.push(["on", args]);
+        }
+    },
+    off(...args) {
+        if (this._io) {
+            this._io.off(...args);
+        } else {
+            this._queued.push(["off", args]);
+        }
+    },
+    emit(...args) {
+        if (this._io) {
+            this._io.emit(...args);
+        } else {
+            this._queued.push(["emit", args]);
+        }
+    },
+    start() {
+        if (!this._io) {
+            this._io = io();
+            const queue = this._queued;
+            this._queued = [];
+            queue.forEach(([method, args]) => {
+                this[method](...args);
+            });
+        }
+    }
+};
+
 export default dynamic(
     async () =>
         function Index({ aspect = 3 / 4 }) {
@@ -89,6 +125,11 @@ function SlideDeck({ children: slides, scale, aspect }) {
         [router, currentSlide, slides.length, setCurrentSlide]
     );
     React.useLayoutEffect(() => {
+        socket.start();
+        // XXX: WTF?
+        socket.on("hello", console.log);
+    });
+    React.useLayoutEffect(() => {
         if (
             (!sizing && !sized) ||
             scale !== sizedAtScale ||
@@ -98,6 +139,8 @@ function SlideDeck({ children: slides, scale, aspect }) {
             setSized(false);
             (async () => {
                 await fitDescriptors(descriptors);
+                // FIXME: Why so many times?
+                console.log("Calling fit descriptors", sizing, sized);
                 setSized(true);
                 setSizing(false);
                 setSizedAt([scale, aspect]);
@@ -190,7 +233,7 @@ function handleKeyPressForDeck(
 const TEXT_SIZE_FACTOR = 2.0;
 
 async function fitDescriptors(descriptors) {
-    console.time("fitDescriptors");
+    const startTime = new Date();
     const style = document.createElement("style");
     style.appendChild(document.createTextNode(""));
     document.head.appendChild(style);
@@ -232,7 +275,7 @@ async function fitDescriptors(descriptors) {
         await beNice();
     }
     setSizes(current);
-    console.timeEnd("fitDescriptors");
+    console.log(`fitDescriptors ${new Date() - startTime}ms`);
 }
 
 /**
